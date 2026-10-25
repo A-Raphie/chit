@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "entries": {
+    "AGENTS.md": {
+      "hash": "ea4a7d49c9b935356339db594d83c0556854e71e145dab6afb78adf4b904fdcc",
+      "pulledAt": "2026-10-25T00:51:50.557Z"
+    },
+    "README.md": {
+      "hash": "eb58c4f1e396e6d9ba0f0ed310eae6820da88f8d9ca5621615831bc565b96b88",
+      "pulledAt": "2026-10-25T00:51:50.558Z"
+    },
+    "package.json": {
+      "hash": "658bc37e4d7412af42ec50fefcc26d22c6737cdb488e13b337ed52504e3e35a1",
+      "pulledAt": "2026-10-25T00:51:50.558Z"
+    },
+    "contracts/ChitBook.sol": {
+      "hash": "7c92b9303da4a6c9a75ae4920149757aa49426ab76e2542d82f9f26a61eb4156",
+      "pulledAt": "2026-10-25T00:51:50.559Z"
+    },
+    "src/App.tsx": {
+      "hash": "ee3edd39edfc6e5638a0420a1e3f8950f67fad2dfb5c6654c9473d6ecd2352ef",
+      "pulledAt": "2026-10-25T00:51:50.559Z"
+    },
+    "src/config.ts": {
+      "hash": "596382b44e51f54fb0045aefbf334b5e96dc801d09179e69d6dd1a5934e6caa4",
+      "pulledAt": "2026-10-25T00:51:50.559Z"
+    },
+    "src/console-capture.ts": {
+      "hash": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce",
+      "pulledAt": "2026-10-25T00:51:50.560Z"
+    },
+    "src/index.css": {
+      "hash": "7b91475d7bf624dc71cb2721f52df36b382913523f67a7677ab2d42a220e5039",
+      "pulledAt": "2026-10-25T00:51:50.560Z"
+    },
+    "src/main.tsx": {
+      "hash": "a0ab75e5c47174ac3a52c5ed986f58ecae43295457b842ea2ca51d86eb688563",
+      "pulledAt": "2026-10-25T00:51:50.560Z"
+    },
+    "src/onchain-facts.ts": {
+      "hash": "c7c314ada2f6be684dcd24c703fee3fec68f8bc0a2c7c9d1bcf3633c33199abd",
+      "pulledAt": "2026-10-25T00:51:50.561Z"
+    },
+    "src/onchain-money.ts": {
+      "hash": "1ac379552459f345f429d85b6d3f9f5f052be0c62ab630c6b111ea6f7a78af4f",
+      "pulledAt": "2026-10-25T00:51:50.561Z"
+    },
+    "src/onchain-wait.ts": {
+      "hash": "e6b89dcf266213adea50cd35dd761aa8adfc4fb121dd90c702fb635d98bb1577",
+      "pulledAt": "2026-10-25T00:51:50.562Z"
+    },
+    "src/tracing.ts": {
+      "hash": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8",
+      "pulledAt": "2026-10-25T00:51:50.562Z"
+    },
+    "src/vite-env.d.ts": {
+      "hash": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+      "pulledAt": "2026-10-25T00:51:50.562Z"
+    },
+    "contracts/cache/solidity-files-cache.json": {
+      "hash": "f88073f836b544082d7f1661df344a99357778b73302591b4fee8fb666e5ad09",
+      "pulledAt": "2026-10-25T00:51:50.563Z"
+    },
+    "contracts/contract-metadata/.gitkeep": {
+      "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "pulledAt": "2026-10-25T00:51:50.563Z"
+    },
+    "contracts/contract-metadata/ChitBook.json": {
+      "hash": "ae10e644f8a8282e6da0f51039719d515d1bca3301f453515b8461c992a2e474",
+      "pulledAt": "2026-10-25T00:51:50.564Z"
+    },
+    "contracts/script/Create2Factory.sol": {
+      "hash": "4b2d23e8364e58e08460c39d6c26dced67b82b7e039c306c671245c4f012c38b",
+      "pulledAt": "2026-10-25T00:51:50.564Z"
+    },
+    "contracts/script/DeployCreate2.s.sol": {
+      "hash": "031692db152269016a8df83293d429f69f90dcb0e563ecc5366a257cbcf334a1",
+      "pulledAt": "2026-10-25T00:51:50.565Z"
+    },
+    "contracts/test-integration/.gitkeep": {
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pulledAt": "2026-10-25T00:51:50.565Z"
+    },
+    "contracts/test/.gitkeep": {
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pulledAt": "2026-10-25T00:51:50.565Z"
+    },
+    "src/components/LedgerScreen.tsx": {
+      "hash": "3491a784fa4e58783d87a92abaaf2a0318ffebc1ffebe77c979215bbc35ab5bf",
+      "pulledAt": "2026-10-25T00:51:50.566Z"
+    },
+    "src/components/PayScreen.tsx": {
+      "hash": "96e7ab9e56a0667dd4729a0c18ee91e24646d85ffcb1de6cc45d9d063cb069f7",
+      "pulledAt": "2026-10-25T00:51:50.566Z"
+    },
+    "src/components/ReceiptView.tsx": {
+      "hash": "d5155adac2f305ef86543f44ac18aa43e10c23a0f3ce2ca2eeff5f4c03f37982",
+      "pulledAt": "2026-10-25T00:51:50.566Z"
+    },
+    "src/components/VerifyScreen.tsx": {
+      "hash": "af4df41dacb385b57ab2799a177acdb94934c38f926b191e2b7d576c1e2eadc3",
+      "pulledAt": "2026-10-25T00:51:50.566Z"
+    },
+    "src/lib/chitbook.ts": {
+      "hash": "242f54d89d92b37bae33c121212babf1082c6d874e7732d66d4285e1d2684b7e",
+      "pulledAt": "2026-10-25T00:51:50.567Z"
+    },
+    "src/lib/share.ts": {
+      "hash": "33581dacacd200b049d495c43edf982bdeaccbf76e22309b2a53d2e390e177e5",
+      "pulledAt": "2026-10-25T00:51:50.567Z"
+    },
+    "contracts/out/Base.sol/CommonBase.json": {
+      "hash": "300dd127662a974f128afcec00533a39510c0d33d4c8f45a4d7e1c4c7bc3ec88",
+      "pulledAt": "2026-10-25T00:51:50.567Z"
+    },
+    "contracts/out/Base.sol/ScriptBase.json": {
+      "hash": "5f029fef42fe1eb74ff8018fef62e527cb7db1dd1e2f8f33f0abb0b4e38e9194",
+      "pulledAt": "2026-10-25T00:51:50.567Z"
+    },
+    "contracts/out/Base.sol/TestBase.json": {
+      "hash": "5287e7ac4bea156b41730dc7f346f002e0858c4a185ce4226aa9bbe948e58790",
+      "pulledAt": "2026-10-25T00:51:50.568Z"
+    },
+    "contracts/out/ChitBook.sol/ChitBook.json": {
+      "hash": "3b57bcd06059ddcea21d425d19001b028242d7b72a9901e755e9c962acb8229c",
+      "pulledAt": "2026-10-25T00:51:50.568Z"
+    },
+    "contracts/out/Create2.sol/Create2.json": {
+      "hash": "84d97557fb527f2ea32f1c6cd03ca9ececc5b45fc87585af2872aae5c4c16778",
+      "pulledAt": "2026-10-25T00:51:50.568Z"
+    },
+    "contracts/out/Create2Factory.sol/Create2Factory.json": {
+      "hash": "8186fbe45fea2a4a275da7ec7c206be13a7673ca23269eea5522b5098e92b9b3",
+      "pulledAt": "2026-10-25T00:51:50.569Z"
+    },
+    "contracts/out/DeployCreate2.s.sol/DeployCreate2.json": {
+      "hash": "efa6bdf7431797b533bd0b654cd6b4b9e2d68fb913ef3d7505d4c1c53517606d",
+      "pulledAt": "2026-10-25T00:51:50.569Z"
+    },
+    "contracts/out/Errors.sol/Errors.json": {
+      "hash": "ce9820c121e0395d57ae8a25eaf38cd0815ae9d47f70be45c5b5cce04b6349a7",
+      "pulledAt": "2026-10-25T00:51:50.569Z"
+    },
+    "contracts/out/IERC1363.sol/IERC1363.json": {
+      "hash": "1fc5b63fa5ef74965558d5a064f3f1a31fcbf27380c0bb7646c69460bef5bf64",
+      "pulledAt": "2026-10-25T00:51:50.569Z"
+    },
+    "contracts/out/IERC165.sol/IERC165.json": {
+      "hash": "38b70e7de6e44ec64e8e27a9056791ec36aa5b46f192cf303fd75f63ff64e4c8",
+      "pulledAt": "2026-10-25T00:51:50.570Z"
+    },
+    "contracts/out/IERC20.sol/IERC20.json": {
+      "hash": "1d24d021232c21dfda83702441c4d9f52b042c04b2bdafb6b54248ada52009af",
+      "pulledAt": "2026-10-25T00:51:50.570Z"
+    },
+    "contracts/out/IMulticall3.sol/IMulticall3.json": {
+      "hash": "2f5c31faa9c7b282ae11d936f78e5a1af2f998384d0c693faebfda4ddd14f6af",
+      "pulledAt": "2026-10-25T00:51:50.570Z"
+    },
+    "contracts/out/LowLevelCall.sol/LowLevelCall.json": {
+      "hash": "00d80c3a68f71c1703def8d1a6b1d6c0ff9a0ce750119712081c5d690a2e8ee9",
+      "pulledAt": "2026-10-25T00:51:50.571Z"
+    },
+    "contracts/out/SafeERC20.sol/SafeERC20.json": {
+      "hash": "ea986a0d4220fcbb3938c0fccd6f5b3b391795099e5aa0a3f312a62dc09cad68",
+      "pulledAt": "2026-10-25T00:51:50.572Z"
+    },
+    "contracts/out/Script.sol/Script.json": {
+      "hash": "d64e265468df02c2079d929c2b1c6201b64d693a1ba26ab638f5fea12838b106",
+      "pulledAt": "2026-10-25T00:51:50.572Z"
+    },
+    "contracts/out/StdChains.sol/StdChains.json": {
+      "hash": "068733a8bb2bf45e460b20c01a7e1564a96975c034b77c754ca1e489be4765d6",
+      "pulledAt": "2026-10-25T00:51:50.572Z"
+    },
+    "contracts/out/StdCheats.sol/StdCheats.json": {
+      "hash": "12cff415275918c1565c7c0ff68b2ef8faaa894150182a85fe9ec585549e6395",
+      "pulledAt": "2026-10-25T00:51:50.573Z"
+    },
+    "contracts/out/StdCheats.sol/StdCheatsSafe.json": {
+      "hash": "b345b60a75732956269423149ca4ffa19ee4e9bfef060b92ec874a72de909e80",
+      "pulledAt": "2026-10-25T00:51:50.573Z"
+    },
+    "contracts/out/StdConstants.sol/StdConstants.json": {
+      "hash": "9bdae2efa56f64b3057356deab51b2973e68aeb325055b64a263d5b3e2f1a83e",
+      "pulledAt": "2026-10-25T00:51:50.573Z"
+    },
+    "contracts/out/StdJson.sol/stdJson.json": {
+      "hash": "36c600731d2361dd69c104052a74cb1404e1f0cb0a351140874a499b6c01704d",
+      "pulledAt": "2026-10-25T00:51:50.573Z"
+    },
+    "contracts/out/StdMath.sol/stdMath.json": {
+      "hash": "12cbf49addf0b19f5a8b1a588fb577fadf2133cfb3af7186e5912ff8f6a51934",
+      "pulledAt": "2026-10-25T00:51:50.573Z"
+    },
+    "contracts/out/StdStorage.sol/stdStorage.json": {
+      "hash": "ad7515d2168b71dd67f95906f8bef85bcddb8a8a60f17349e53b091138e88400",
+      "pulledAt": "2026-10-25T00:51:50.574Z"
+    },
+    "contracts/out/StdStorage.sol/stdStorageSafe.json": {
+      "hash": "5e87d2fdfe2182e84bfebbe4a188e91f59bcd23f1babd48553ea949e37cfafdd",
+      "pulledAt": "2026-10-25T00:51:50.574Z"
+    },
+    "contracts/out/StdStyle.sol/StdStyle.json": {
+      "hash": "c96cb34b10e9371f52468b965f7b217cc5a9aa85305ea81d4a11582659dc8666",
+      "pulledAt": "2026-10-25T00:51:50.574Z"
+    },
+    "contracts/out/StdUtils.sol/StdUtils.json": {
+      "hash": "1776fb41c2cc7f1c2b17fd5a6ce735faa4bc72929fa29d7753a954c749e7cbc4",
+      "pulledAt": "2026-10-25T00:51:50.574Z"
+    },
+    "contracts/out/Vm.sol/Vm.json": {
+      "hash": "add1057062cf8ed631dd46d2020f2c55399974f02e809358f139365e5a445129",
+      "pulledAt": "2026-10-25T00:51:50.577Z"
+    },
+    "contracts/out/Vm.sol/VmSafe.json": {
+      "hash": "af11b4393b312beb3f2229f69261627bd408f8b3e41276f595e05d3bbacb1420",
+      "pulledAt": "2026-10-25T00:51:50.578Z"
+    },
+    "contracts/out/build-info/249c6ee35e5cc13f.json": {
+      "hash": "cbf55227562739f8cf0edbd50f5f1c48275015cda5e1ab5097bea323dbc63793",
+      "pulledAt": "2026-10-25T00:51:50.578Z"
+    },
+    "contracts/out/build-info/639672c2d5534b53.json": {
+      "hash": "b241617ecc53221b29a83ca85445f4ff32c01790c2e128bf33f1fa847223ade5",
+      "pulledAt": "2026-10-25T00:51:50.579Z"
+    },
+    "contracts/out/console.sol/console.json": {
+      "hash": "ca37e57c0f90fdde5b16afd51311a49967d3862827e1c607ab6f953a45a75840",
+      "pulledAt": "2026-10-25T00:51:50.579Z"
+    },
+    "contracts/out/safeconsole.sol/safeconsole.json": {
+      "hash": "747a38a523b779b1162f8922a0792297f8d42bdb46ac65b8eea9c9a71b1fa3e4",
+      "pulledAt": "2026-10-25T00:51:50.579Z"
+    },
+    "contracts/out/interfaces/IERC165.sol/IERC165.json": {
+      "hash": "335b72568ef60d03be5b5d66b97544d21a02501259524703e2b0bcbf62543b32",
+      "pulledAt": "2026-10-25T00:51:50.580Z"
+    },
+    "contracts/out/interfaces/IERC20.sol/IERC20.json": {
+      "hash": "c4eb2bba00c88ea084e73cecb46f271906d9c3d9f2abf35c44d0743c12245ffd",
+      "pulledAt": "2026-10-25T00:51:50.580Z"
+    }
+  }
+}
