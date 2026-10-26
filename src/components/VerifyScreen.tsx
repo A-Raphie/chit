@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { usePublicClient } from "wagmi";
-import { parseAbiItem, keccak256, toBytes } from "viem";
+import { keccak256, toBytes } from "viem";
 import { CHITBOOK_ADDRESS, CHITBOOK_ABI, type ChitReceipt } from "@/lib/chitbook";
 import { buildTxExplorerUrl } from "@/onchain-facts";
 import { Search, CheckCircle } from "lucide-react";
 
 const CHAIN_ID = 5042002;
-const LOOKBACK = 100000n; // scan a wider window for verify
 
 interface Props {
   onSelectReceipt: (receipt: ChitReceipt, txHash?: `0x${string}`) => void;
@@ -32,6 +31,36 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [found, setFound] = useState<{ receipt: ChitReceipt; txHash?: `0x${string}` } | null>(null);
+
+  // Deterministic claim-hash search: read receipts newest-first from the
+  // contract itself (no log indexing window to fall out of).
+  async function findByClaimHash(hash: `0x${string}`) {
+    if (!CHITBOOK_ADDRESS) return null;
+    const count = (await client!.readContract({
+      address: CHITBOOK_ADDRESS,
+      abi: CHITBOOK_ABI,
+      functionName: "receiptCount",
+    })) as bigint;
+    if (count === 0n) return null;
+    const cap = 500;
+    const oldest = Number(count) > cap ? Number(count) - cap + 1 : 1;
+    for (let i = Number(count); i >= oldest; i--) {
+      try {
+        const r = (await client!.readContract({
+          address: CHITBOOK_ADDRESS,
+          abi: CHITBOOK_ABI,
+          functionName: "getReceipt",
+          args: [BigInt(i)],
+        })) as unknown as { claimHash: `0x${string}` };
+        if (r.claimHash?.toLowerCase() === hash.toLowerCase()) {
+          return { receiptId: BigInt(i) };
+        }
+      } catch {
+        // deleted/invalid id — keep scanning
+      }
+    }
+    return null;
+  }
 
   async function handleVerify() {
     if (!CHITBOOK_ADDRESS || !client || !input.trim()) return;
@@ -82,26 +111,16 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
           // Not a tx hash — fall through to try as claim hash
         }
 
-        // Try as a bytes32 claimHash via events
-        const head = await client.getBlockNumber();
-        const fromBlock = head > LOOKBACK ? head - LOOKBACK : 0n;
-        const logs = await client.getLogs({
-          address: CHITBOOK_ADDRESS,
-          event: parseAbiItem(
-            "event ReceiptIssued(uint256 indexed id, address indexed payer, address indexed payee, uint256 amount, bytes32 claimHash, string memo)"
-          ),
-          fromBlock,
-          toBlock: head,
-        });
-        const match = logs.find((l) => l.args.claimHash === t);
-        if (match && match.args.id) {
+        // Try as a bytes32 claimHash — deterministic scan of contract state
+        const match = await findByClaimHash(t as `0x${string}`);
+        if (match) {
           const raw = await client.readContract({
             address: CHITBOOK_ADDRESS,
             abi: CHITBOOK_ABI,
             functionName: "getReceipt",
-            args: [match.args.id],
+            args: [match.receiptId],
           });
-          setFound({ receipt: raw, txHash: match.transactionHash ?? undefined });
+          setFound({ receipt: raw });
           return;
         }
 
@@ -111,25 +130,15 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
 
       // --- By claim reference text (keccak256 it then scan events) ---
       const claimHash = keccak256(toBytes(t));
-      const head = await client.getBlockNumber();
-      const fromBlock = head > LOOKBACK ? head - LOOKBACK : 0n;
-      const logs = await client.getLogs({
-        address: CHITBOOK_ADDRESS,
-        event: parseAbiItem(
-          "event ReceiptIssued(uint256 indexed id, address indexed payer, address indexed payee, uint256 amount, bytes32 claimHash, string memo)"
-        ),
-        fromBlock,
-        toBlock: head,
-      });
-      const match = logs.find((l) => l.args.claimHash === claimHash);
-      if (match && match.args.id) {
+      const match = await findByClaimHash(claimHash);
+      if (match) {
         const raw = await client.readContract({
           address: CHITBOOK_ADDRESS,
           abi: CHITBOOK_ABI,
           functionName: "getReceipt",
-          args: [match.args.id],
+          args: [match.receiptId],
         });
-        setFound({ receipt: raw, txHash: match.transactionHash ?? undefined });
+        setFound({ receipt: raw });
         return;
       }
       setError(`No receipt found with claim hash ${claimHash}.`);

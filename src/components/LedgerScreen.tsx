@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePublicClient } from "wagmi";
-import { parseAbiItem } from "viem";
+import { parseAbiItem, type Address } from "viem";
 import { Amount, usdcDecimalsFor } from "@/onchain-money";
 import { CHITBOOK_ADDRESS, CHITBOOK_ABI, type ChitReceipt } from "@/lib/chitbook";
 import { buildTxExplorerUrl } from "@/onchain-facts";
 import { ExternalLink, RefreshCw } from "lucide-react";
 
 const CHAIN_ID = 5042002;
-const LOOKBACK = 2000n; // recent blocks only
+const MAX_ROWS = 8;
 
 interface LedgerEntry {
   id: bigint;
@@ -16,8 +16,8 @@ interface LedgerEntry {
   amount: bigint;
   claimHash: `0x${string}`;
   memo: string;
+  timestamp?: bigint;
   txHash?: `0x${string}`;
-  blockNumber?: bigint;
 }
 
 interface Props {
@@ -40,29 +40,69 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const head = await client.getBlockNumber();
-      const fromBlock = head > LOOKBACK ? head - LOOKBACK : 0n;
-      const logs = await client.getLogs({
+      // Source of truth is the contract itself: receiptCount + getReceipt,
+      // newest first. Event logs are only enrichment for tx links.
+      const count = (await client.readContract({
         address: CHITBOOK_ADDRESS,
-        event: parseAbiItem(
-          "event ReceiptIssued(uint256 indexed id, address indexed payer, address indexed payee, uint256 amount, bytes32 claimHash, string memo)"
-        ),
-        fromBlock,
-        toBlock: head,
-      });
-      const parsed: LedgerEntry[] = logs
-        .slice()
-        .reverse()
-        .map((log) => ({
-          id: log.args.id ?? 0n,
-          payer: log.args.payer ?? ("0x"),
-          payee: log.args.payee ?? ("0x"),
-          amount: log.args.amount ?? 0n,
-          claimHash: log.args.claimHash ?? ("0x"),
-          memo: log.args.memo ?? "",
-          txHash: log.transactionHash ?? undefined,
-          blockNumber: log.blockNumber ?? undefined,
-        }));
+        abi: CHITBOOK_ABI,
+        functionName: "receiptCount",
+      })) as bigint;
+
+      if (count === 0n) {
+        setEntries([]);
+        setLastFetched(Date.now());
+        return;
+      }
+
+      const newest = Number(count);
+      const oldest = Math.max(1, newest - MAX_ROWS + 1);
+      const ids: bigint[] = [];
+      for (let i = newest; i >= oldest; i--) ids.push(BigInt(i));
+
+      const raws = (await Promise.all(
+        ids.map((id) =>
+          client.readContract({
+            address: CHITBOOK_ADDRESS!,
+            abi: CHITBOOK_ABI,
+            functionName: "getReceipt",
+            args: [id],
+          })
+        )
+      )) as unknown as Array<{
+        payer: Address; payee: Address; amount: bigint;
+        claimHash: `0x${string}`; memo: string; timestamp: bigint;
+      }>;
+
+      // tx-hash enrichment: full-range event scan (contract is young)
+      const txById = new Map<string, `0x${string}`>();
+      try {
+        const logs = await client.getLogs({
+          address: CHITBOOK_ADDRESS,
+          event: parseAbiItem(
+            "event ReceiptIssued(uint256 indexed id, address indexed payer, address indexed payee, uint256 amount, bytes32 claimHash, string memo)"
+          ),
+          fromBlock: 0n,
+          toBlock: "latest",
+        });
+        for (const log of logs) {
+          if (log.args.id !== undefined && log.transactionHash) {
+            txById.set(log.args.id.toString(), log.transactionHash);
+          }
+        }
+      } catch {
+        // enrichment is optional — rows render without tx links
+      }
+
+      const parsed: LedgerEntry[] = raws.map((r, idx) => ({
+        id: ids[idx],
+        payer: r.payer,
+        payee: r.payee,
+        amount: r.amount,
+        claimHash: r.claimHash,
+        memo: r.memo,
+        timestamp: r.timestamp,
+        txHash: txById.get(ids[idx].toString()),
+      }));
       setEntries(parsed);
       setLastFetched(Date.now());
     } catch (e) {
@@ -72,8 +112,6 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
     }
   }, [client]);
 
-  // Auto-load on mount and when client changes. Using a ref to avoid re-firing
-  // on every re-render while keeping the linter happy about setState in effects.
   const didFetch = useRef(false);
   useEffect(() => {
     didFetch.current = false;
@@ -88,7 +126,7 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
     if (!CHITBOOK_ADDRESS || !client) return;
     try {
       const raw = await client.readContract({
-        address: CHITBOOK_ADDRESS,
+        address: CHITBOOK_ADDRESS!,
         abi: CHITBOOK_ABI,
         functionName: "getReceipt",
         args: [entry.id],
@@ -101,7 +139,7 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
 
   if (!CHITBOOK_ADDRESS) {
     return (
-      <div className="bg-[#a07830]/10 border border-[#a07830]/30 rounded-xl p-6 text-sm text-[#a07830] font-mono text-center">
+      <div className="bg-[#a07830]/10 border border-[#a07830]/40 rounded-lg p-6 text-sm text-[#7a5a20] font-mono text-center">
         Contract not deployed yet.
       </div>
     );
@@ -109,15 +147,17 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-b-2 border-[#2a1f0e] pb-3">
         <div>
           <h1 className="font-serif text-3xl font-bold text-[#2a1f0e] tracking-tight">Ledger</h1>
-          <p className="text-sm text-[#2a1f0e]/50 mt-0.5">Recent receipt events</p>
+          <p className="text-xs font-mono uppercase tracking-[0.14em] text-[#2a1f0e]/50 mt-1">
+            Every chit ever issued, straight from the contract
+          </p>
         </div>
         <button
           onClick={() => { void fetchLedger(); }}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[#2a1f0e]/50 hover:text-[#2a1f0e] border border-[#2a1f0e]/15 px-3 py-2 rounded-lg hover:bg-[#2a1f0e]/5 transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[#2a1f0e]/70 bg-[#f5f0e8] border-2 border-[#2a1f0e] px-3 py-2 rounded-md hover:-translate-y-px hover:shadow-[2px_2px_0_#2a1f0e] active:translate-y-0 active:shadow-none transition-all disabled:opacity-40"
         >
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
           Refresh
@@ -125,72 +165,94 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 font-mono">
+        <div className="bg-[#a02c20]/10 border border-[#a02c20]/40 rounded-lg p-4 text-sm text-[#a02c20] font-mono">
           {error}
         </div>
       )}
 
       {loading && entries.length === 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white/60 border border-[#2a1f0e]/8 rounded-xl h-20 animate-pulse" />
+            <div key={i} className="bg-[#fffaf0] border-2 border-[#2a1f0e]/15 rounded-lg h-24 animate-pulse" />
           ))}
         </div>
       )}
 
       {!loading && entries.length === 0 && !error && (
-        <div className="border-2 border-dashed border-[#2a1f0e]/12 rounded-xl p-12 text-center">
-          <p className="font-mono text-[#2a1f0e]/30 text-sm uppercase tracking-wider">
+        <div className="border-2 border-dashed border-[#2a1f0e]/35 rounded-lg p-14 text-center bg-[#fffaf0]/60">
+          <p className="font-mono text-[#2a1f0e]/60 text-sm uppercase tracking-[0.18em]">
             No receipts yet
           </p>
-          <p className="text-xs text-[#2a1f0e]/20 mt-1">Issue a chit to see it here.</p>
+          <p className="text-xs text-[#2a1f0e]/40 mt-2 font-mono">
+            The first payment through ChitBook will print here.
+          </p>
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {entries.map((entry) => (
           <button
             key={entry.id.toString()}
             onClick={() => { void openReceipt(entry); }}
-            className="w-full text-left bg-white/80 hover:bg-white border border-[#2a1f0e]/10 hover:border-[#a07830]/30 rounded-xl px-5 py-4 transition-all group shadow-sm hover:shadow-md"
+            className="w-full text-left bg-[#fffaf0] border-2 border-[#2a1f0e] rounded-lg shadow-[3px_3px_0_#2a1f0e] hover:-translate-y-0.5 hover:shadow-[5px_5px_0_#2a1f0e] active:translate-y-0 active:shadow-none transition-all"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs bg-[#2a1f0e] text-[#f5f0e8] px-2 py-0.5 rounded">
-                    #{entry.id.toString()}
-                  </span>
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#2a1f0e]/40 truncate">
-                    {entry.claimHash.slice(0, 18)}…
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-[#2a1f0e]/50 font-mono">
-                  <span>{shortAddr(entry.payer)}</span>
-                  <span className="text-[#a07830]">→</span>
-                  <span>{shortAddr(entry.payee)}</span>
-                </div>
-                {entry.memo && (
-                  <p className="text-xs text-[#2a1f0e]/40 italic truncate">
-                    &ldquo;{entry.memo}&rdquo;
+            {/* slip top perforation */}
+            <div
+              aria-hidden
+              className="h-2 opacity-25"
+              style={{
+                background:
+                  "radial-gradient(circle at 6px -2px, transparent 5px, #2a1f0e 5px)",
+                backgroundSize: "12px 100%",
+                backgroundRepeat: "repeat-x",
+              }}
+            />
+            <div className="px-5 pb-4 pt-1">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs bg-[#2a1f0e] text-[#f5f0e8] px-2 py-0.5 rounded-sm font-bold">
+                      CHIT #{entry.id.toString()}
+                    </span>
+                    {entry.timestamp !== undefined && (
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#2a1f0e]/50">
+                        {new Date(Number(entry.timestamp) * 1000).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[#2a1f0e]/60 font-mono">
+                    <span>{shortAddr(entry.payer)}</span>
+                    <span className="text-[#a07830] font-bold">──▶</span>
+                    <span>{shortAddr(entry.payee)}</span>
+                  </div>
+                  <p className="font-mono text-[10px] text-[#2a1f0e]/40 break-all leading-relaxed">
+                    claim {entry.claimHash.slice(0, 34)}…
                   </p>
-                )}
-              </div>
-              <div className="text-right shrink-0 space-y-1">
-                <p className="font-mono font-bold tabular-nums text-[#2a1f0e]">
-                  {Amount.fromRaw(entry.amount, usdcDecimalsFor(CHAIN_ID)).toFixed(2)}
-                </p>
-                <p className="text-[10px] font-mono text-[#a07830] uppercase tracking-wider">USDC</p>
-                {entry.txHash && (
-                  <a
-                    href={buildTxExplorerUrl(CHAIN_ID, entry.txHash)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-0.5 text-[10px] text-[#2a1f0e]/30 hover:text-[#a07830] transition-colors"
-                  >
-                    <ExternalLink size={9} />
-                  </a>
-                )}
+                  {entry.memo && (
+                    <p className="text-xs text-[#2a1f0e]/50 italic truncate">
+                      &ldquo;{entry.memo}&rdquo;
+                    </p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-mono font-bold tabular-nums text-2xl text-[#2a1f0e]">
+                    {Amount.fromRaw(entry.amount, usdcDecimalsFor(CHAIN_ID)).toFixed(2)}
+                  </p>
+                  <p className="text-[10px] font-mono text-[#7a5a20] uppercase tracking-[0.2em]">
+                    USDC settled
+                  </p>
+                  {entry.txHash && (
+                    <a
+                      href={buildTxExplorerUrl(CHAIN_ID, entry.txHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-[10px] font-mono text-[#a07830] hover:text-[#7a5a20] underline mt-1"
+                    >
+                      <ExternalLink size={9} /> tx
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </button>
@@ -198,8 +260,8 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
       </div>
 
       {lastFetched && (
-        <p className="text-[10px] font-mono text-[#2a1f0e]/25 text-center uppercase tracking-wider">
-          Last updated {new Date(lastFetched).toLocaleTimeString()}
+        <p className="text-[10px] font-mono text-[#2a1f0e]/40 text-center uppercase tracking-[0.2em]">
+          Ledger reads the contract directly · updated {new Date(lastFetched).toLocaleTimeString()}
         </p>
       )}
     </div>

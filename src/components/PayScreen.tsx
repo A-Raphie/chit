@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { getUsdc } from "@/onchain-facts";
 import { Amount, parseAmount, usdcDecimalsFor } from "@/onchain-money";
 import { CHITBOOK_ADDRESS, CHITBOOK_ABI, type ChitReceipt } from "@/lib/chitbook";
+import ReceiptPreview from "./ReceiptPreview";
 
 const CHAIN_ID = 5042002 as const; // Arc Testnet
 
@@ -32,6 +33,11 @@ function parseOnchainError(error: unknown): string {
 
 type Step = "idle" | "approving" | "approved" | "paying" | "done";
 
+const inputCls =
+  "w-full font-mono text-sm bg-[#f5f0e8] border-2 border-[#2a1f0e]/25 rounded-md px-3 py-2.5 text-[#2a1f0e] placeholder:text-[#2a1f0e]/30 focus:outline-none focus:border-[#a07830] focus:ring-2 focus:ring-[#a07830]/30 disabled:opacity-50";
+const labelCls =
+  "block text-[10px] font-mono uppercase tracking-[0.18em] text-[#2a1f0e]/60 mb-1.5";
+
 export default function PayScreen({ onReceiptIssued }: Props) {
   const { address, chainId, isConnected } = useAccount();
   const { switchChain } = useSwitchChain();
@@ -45,7 +51,6 @@ export default function PayScreen({ onReceiptIssued }: Props) {
   const usdcFact = getUsdc(CHAIN_ID);
   const usdcAddress = usdcFact?.address as `0x${string}` | undefined;
 
-  // USDC balance
   const { data: usdcBalance } = useReadContract({
     address: usdcAddress,
     abi: erc20Abi,
@@ -55,17 +60,14 @@ export default function PayScreen({ onReceiptIssued }: Props) {
     query: { enabled: !!address && !!usdcAddress },
   });
 
-  // Approve
   const { writeContract: approveWrite, data: approveTxHash } = useWriteContract();
   const { isLoading: approveConfirming, isSuccess: approveSuccess } =
     useWaitForTransactionReceipt({ hash: approveTxHash });
 
-  // Pay
   const { writeContract: payWrite, data: payTxHash } = useWriteContract();
   const { isLoading: payConfirming, isSuccess: paySuccess, data: payReceipt } =
     useWaitForTransactionReceipt({ hash: payTxHash });
 
-  // Read back the receipt once pay lands
   const [issuedId, setIssuedId] = useState<bigint | undefined>();
   const { data: receiptData } = useReadContract({
     address: CHITBOOK_ADDRESS,
@@ -76,36 +78,27 @@ export default function PayScreen({ onReceiptIssued }: Props) {
     query: { enabled: !!issuedId && !!CHITBOOK_ADDRESS },
   });
 
-  // Watch for approve confirm
   if (approveSuccess && step === "approving") {
     setStep("approved");
     toast.success("USDC approved — ready to issue chit.");
   }
 
-  // Watch for pay confirm
   if (paySuccess && payReceipt && step === "paying") {
     setStep("done");
-    // Extract the id from ReceiptIssued event logs
     const log = payReceipt.logs.find((l) =>
       l.address?.toLowerCase() === CHITBOOK_ADDRESS?.toLowerCase()
     );
     if (log) {
-      // First indexed topic (after event sig) is the receipt id
       const idHex = log.topics[1];
-      if (idHex) {
-        const id = BigInt(idHex);
-        setIssuedId(id);
-      }
+      if (idHex) setIssuedId(BigInt(idHex));
     }
   }
 
-  // Navigate once receiptData loaded
   if (receiptData && step === "done" && issuedId) {
     const r = receiptData;
     setStep("idle");
     setIssuedId(undefined);
     onReceiptIssued(r, payTxHash, claimRef);
-    // reset form
     setPayee("");
     setAmount("");
     setClaimRef("");
@@ -170,180 +163,187 @@ export default function PayScreen({ onReceiptIssued }: Props) {
   const busy = step === "approving" || step === "approved" || step === "paying" || step === "done";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-bold text-[#2a1f0e] tracking-tight">
-          Issue a Chit
-        </h1>
-        <p className="text-sm text-[#2a1f0e]/50 mt-1">
-          Pay with verifiable proof of settlement.
-        </p>
-      </div>
+    <div className="grid gap-8 lg:grid-cols-[1fr_360px] items-start">
+      <div className="space-y-5 min-w-0">
+        <div className="border-b-2 border-[#2a1f0e] pb-3">
+          <h1 className="font-serif text-3xl font-bold text-[#2a1f0e] tracking-tight">
+            Issue a Chit
+          </h1>
+          <p className="text-xs font-mono uppercase tracking-[0.14em] text-[#2a1f0e]/50 mt-1">
+            Pay USDC with verifiable proof of settlement
+          </p>
+        </div>
 
-      {!CHITBOOK_ADDRESS && (
-        <div className="bg-[#a07830]/10 border border-[#a07830]/30 rounded-lg p-4 text-sm text-[#a07830] font-mono">
-          Contract not yet deployed. Deploy ChitBook first.
-        </div>
-      )}
+        {!CHITBOOK_ADDRESS && (
+          <div className="bg-[#a07830]/10 border border-[#a07830]/40 rounded-md p-4 text-sm text-[#7a5a20] font-mono">
+            Contract not yet deployed. Deploy ChitBook first.
+          </div>
+        )}
 
-      {!isConnected ? (
-        <div className="border-2 border-dashed border-[#2a1f0e]/20 rounded-xl p-10 text-center">
-          <p className="text-[#2a1f0e]/50 text-sm mb-3">Connect your wallet to issue chits</p>
-          <ConnectKitButton />
-        </div>
-      ) : isWrongChain ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center space-y-3">
-          <p className="text-amber-700 text-sm font-mono">Wrong network. Switch to Arc Testnet.</p>
-          <button
-            onClick={() => switchChain({ chainId: CHAIN_ID })}
-            className="bg-[#2a1f0e] text-[#f5f0e8] px-5 py-2 rounded-lg text-sm font-mono hover:bg-[#2a1f0e]/80 transition-colors"
-          >
-            Switch Network
-          </button>
-        </div>
-      ) : (
-        <div className="bg-white/80 border border-[#2a1f0e]/10 rounded-xl shadow-sm overflow-hidden">
-          {/* Paper receipt header stripe */}
+        {isWrongChain && (
+          <div className="bg-[#f5b83d]/25 border-2 border-[#a07830] rounded-md p-4 flex items-center justify-between gap-4">
+            <p className="text-sm text-[#7a5a20] font-mono">Wrong network — switch to Arc Testnet.</p>
+            <button
+              onClick={() => switchChain({ chainId: CHAIN_ID })}
+              className="bg-[#2a1f0e] text-[#f5f0e8] border-2 border-[#2a1f0e] px-4 py-2 rounded-md text-xs font-mono uppercase tracking-wider shadow-[2px_2px_0_#7a5a20] hover:-translate-y-px active:translate-y-0 active:shadow-none transition-all"
+            >
+              Switch
+            </button>
+          </div>
+        )}
+
+        <div className="bg-[#fffaf0] border-2 border-[#2a1f0e] rounded-lg shadow-[4px_4px_0_#2a1f0e] overflow-hidden">
           <div className="bg-[#2a1f0e] px-5 py-3 flex items-center justify-between">
-            <span className="font-mono text-[#f5f0e8]/80 text-xs uppercase tracking-[0.14em]">
-              New Payment Receipt
+            <span className="font-mono text-[#f5f0e8]/80 text-[11px] uppercase tracking-[0.18em]">
+              New payment receipt
             </span>
             {formattedBalance !== null && (
-              <span className="font-mono text-[#a07830] text-xs">
-                Balance: {formattedBalance} USDC
+              <span className="font-mono text-[#f5b83d] text-xs">
+                {formattedBalance} USDC
               </span>
             )}
           </div>
 
           <div className="p-5 space-y-4">
-            {/* Payee */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-[#2a1f0e]/50 mb-1">
-                Payee Address
-              </label>
-              <input
-                value={payee}
-                onChange={(e) => setPayee(e.target.value)}
-                placeholder="0x..."
-                disabled={busy}
-                className="w-full font-mono text-sm bg-[#f5f0e8] border border-[#2a1f0e]/15 rounded-lg px-3 py-2.5 text-[#2a1f0e] placeholder:text-[#2a1f0e]/25 focus:outline-none focus:ring-2 focus:ring-[#a07830]/40 disabled:opacity-50"
-              />
-            </div>
-
-            {/* Amount */}
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-[#2a1f0e]/50 mb-1">
-                Amount (USDC)
-              </label>
-              <div className="relative">
+            <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
+              <div>
+                <label className={labelCls}>Payee address</label>
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
+                  value={payee}
+                  onChange={(e) => setPayee(e.target.value)}
+                  placeholder="0x…"
                   disabled={busy}
-                  className="w-full font-mono text-xl tabular-nums bg-[#f5f0e8] border border-[#2a1f0e]/15 rounded-lg px-3 py-2.5 text-[#2a1f0e] placeholder:text-[#2a1f0e]/20 focus:outline-none focus:ring-2 focus:ring-[#a07830]/40 pr-16 disabled:opacity-50"
+                  className={inputCls}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-[#2a1f0e]/40 uppercase">
-                  USDC
-                </span>
+              </div>
+              <div>
+                <label className={labelCls}>Amount</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    disabled={busy}
+                    className={`${inputCls} pr-14 text-lg tabular-nums`}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-[#7a5a20] uppercase tracking-wider">
+                    USDC
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Claim reference */}
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-[#2a1f0e]/50 mb-1">
-                Claim Reference
-              </label>
+              <label className={labelCls}>Claim reference — what this payment settles</label>
               <input
                 value={claimRef}
                 onChange={(e) => setClaimRef(e.target.value)}
                 placeholder="e.g. invoice-417-api-calls"
                 disabled={busy}
-                className="w-full font-mono text-sm bg-[#f5f0e8] border border-[#2a1f0e]/15 rounded-lg px-3 py-2.5 text-[#2a1f0e] placeholder:text-[#2a1f0e]/25 focus:outline-none focus:ring-2 focus:ring-[#a07830]/40 disabled:opacity-50"
+                className={inputCls}
               />
               {claimRef.trim() && (
-                <p className="mt-1 text-[10px] font-mono text-[#2a1f0e]/30 break-all">
-                  hash: {keccak256(toBytes(claimRef.trim()))}
+                <p className="mt-1 text-[10px] font-mono text-[#2a1f0e]/40 break-all">
+                  → {keccak256(toBytes(claimRef.trim()))}
                 </p>
               )}
             </div>
 
-            {/* Memo */}
             <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-[#2a1f0e]/50 mb-1">
-                Memo{" "}
-                <span className="normal-case text-[#2a1f0e]/30">(optional)</span>
+              <label className={labelCls}>
+                Memo <span className="normal-case tracking-normal text-[#2a1f0e]/35">(optional)</span>
               </label>
               <input
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="e.g. 1000 API calls @ 0.0005 USDC each"
                 disabled={busy}
-                className="w-full text-sm bg-[#f5f0e8] border border-[#2a1f0e]/15 rounded-lg px-3 py-2.5 text-[#2a1f0e] placeholder:text-[#2a1f0e]/25 focus:outline-none focus:ring-2 focus:ring-[#a07830]/40 disabled:opacity-50"
+                className={inputCls}
               />
             </div>
 
-            {/* Dashed divider */}
-            <div className="border-t-2 border-dashed border-[#2a1f0e]/10 my-2" />
+            <div className="border-t-2 border-dashed border-[#2a1f0e]/20" />
 
-            {/* Two-step action */}
-            <div className="flex gap-3">
-              {step === "idle" && (
-                <>
-                  <button
-                    onClick={handleApprove}
-                    disabled={!CHITBOOK_ADDRESS}
-                    className="flex-1 bg-[#f5f0e8] border border-[#2a1f0e]/20 text-[#2a1f0e] py-3 rounded-lg font-mono text-sm uppercase tracking-wider hover:bg-[#2a1f0e]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    1. Approve USDC
+            {/* Actions */}
+            {!isConnected ? (
+              <div className="space-y-3">
+                <ConnectKitButton.Custom>
+                  {({ show }) => (
+                    <button
+                      onClick={show}
+                      className="w-full bg-[#f5b83d] text-[#2a1f0e] border-2 border-[#2a1f0e] py-3.5 rounded-md font-mono text-sm font-bold uppercase tracking-[0.14em] shadow-[3px_3px_0_#2a1f0e] hover:-translate-y-0.5 hover:shadow-[5px_5px_0_#2a1f0e] active:translate-y-0 active:shadow-none transition-all"
+                    >
+                      Connect wallet to issue this chit
+                    </button>
+                  )}
+                </ConnectKitButton.Custom>
+                <p className="text-[10px] font-mono text-[#2a1f0e]/40 text-center uppercase tracking-[0.16em]">
+                  Fill the form freely — nothing signs until you connect
+                </p>
+              </div>
+            ) : step === "idle" ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleApprove}
+                  disabled={!CHITBOOK_ADDRESS}
+                  className="flex-1 bg-[#f5f0e8] border-2 border-[#2a1f0e] text-[#2a1f0e] py-3 rounded-md font-mono text-xs uppercase tracking-wider shadow-[3px_3px_0_#2a1f0e] hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#2a1f0e] active:translate-y-0 active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  1 · Approve USDC
+                </button>
+                <button
+                  onClick={handlePay}
+                  disabled={!CHITBOOK_ADDRESS}
+                  className="flex-1 bg-[#f5b83d] text-[#2a1f0e] border-2 border-[#2a1f0e] py-3 rounded-md font-mono text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0_#2a1f0e] hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#2a1f0e] active:translate-y-0 active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  2 · Issue chit
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {step === "approving" && (
+                  <button disabled className="w-full bg-[#2a1f0e]/70 text-[#f5f0e8] py-3 rounded-md font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                    <Spinner /> Confirm in wallet…
                   </button>
+                )}
+                {(approveConfirming || step === "approved") && (
+                  <button disabled className="w-full bg-[#a07830] text-white py-3 rounded-md font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                    {approveConfirming ? <><Spinner /> Approving…</> : "Approved"}
+                  </button>
+                )}
+                {(step === "approved" || approveConfirming) && (
                   <button
                     onClick={handlePay}
-                    disabled={!CHITBOOK_ADDRESS}
-                    className="flex-1 bg-[#2a1f0e] text-[#f5f0e8] py-3 rounded-lg font-mono text-sm uppercase tracking-wider hover:bg-[#2a1f0e]/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                    disabled={!CHITBOOK_ADDRESS || approveConfirming}
+                    className="w-full bg-[#f5b83d] text-[#2a1f0e] border-2 border-[#2a1f0e] py-3 rounded-md font-mono text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0_#2a1f0e] hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#2a1f0e] active:translate-y-0 active:shadow-none transition-all disabled:opacity-40"
                   >
-                    2. Issue Chit
+                    Issue chit
                   </button>
-                </>
-              )}
-              {step === "approving" && (
-                <button disabled className="flex-1 bg-[#2a1f0e]/50 text-[#f5f0e8] py-3 rounded-lg font-mono text-sm uppercase tracking-wider flex items-center justify-center gap-2">
-                  <Spinner /> Confirm in wallet…
-                </button>
-              )}
-              {(approveConfirming || step === "approved") && (
-                <button disabled className="flex-1 bg-[#a07830] text-white py-3 rounded-lg font-mono text-sm uppercase tracking-wider flex items-center justify-center gap-2">
-                  {approveConfirming ? <><Spinner /> Approving…</> : "Approved — now Issue Chit"}
-                </button>
-              )}
-              {step === "paying" && (
-                <button disabled className="flex-1 bg-[#2a1f0e]/50 text-[#f5f0e8] py-3 rounded-lg font-mono text-sm uppercase tracking-wider flex items-center justify-center gap-2">
-                  <Spinner /> {payConfirming ? "Confirming on Arc…" : "Confirm in wallet…"}
-                </button>
-              )}
-              {step === "done" && (
-                <button disabled className="flex-1 bg-emerald-600 text-white py-3 rounded-lg font-mono text-sm uppercase tracking-wider flex items-center justify-center gap-2">
-                  <Spinner /> Loading receipt…
-                </button>
-              )}
-            </div>
-
-            {/* One-shot shortcut when already approved */}
-            {step === "approved" && (
-              <button
-                onClick={handlePay}
-                disabled={!CHITBOOK_ADDRESS}
-                className="w-full bg-[#2a1f0e] text-[#f5f0e8] py-3 rounded-lg font-mono text-sm uppercase tracking-wider hover:bg-[#2a1f0e]/80 transition-colors shadow-sm disabled:opacity-40"
-              >
-                Issue Chit
-              </button>
+                )}
+                {(step === "paying" || step === "done") && (
+                  <button disabled className="w-full bg-[#2a1f0e]/70 text-[#f5f0e8] py-3 rounded-md font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                    <Spinner /> {step === "done" ? "Loading receipt…" : payConfirming ? "Confirming on Arc…" : "Confirm in wallet…"}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
-      )}
+
+        <p className="text-[10px] font-mono text-[#2a1f0e]/40 leading-relaxed">
+          ChitBook never holds funds — USDC moves payer → payee in the same call, with the receipt written onchain.
+        </p>
+      </div>
+
+      {/* Live receipt preview — the artifact, before it exists */}
+      <div className="hidden lg:block sticky top-20">
+        <ReceiptPreview payee={payee} amount={amount} claimRef={claimRef} memo={memo} />
+        <p className="text-[10px] font-mono text-[#2a1f0e]/40 text-center mt-3 uppercase tracking-[0.16em]">
+          This slip mints the moment the payment lands
+        </p>
+      </div>
     </div>
   );
 }
