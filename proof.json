@@ -1,0 +1,27 @@
+{
+  "project": "chit",
+  "chain": "arc-testnet",
+  "chainId": 5042002,
+  "rpc": "https://rpc.testnet.arc.io",
+  "contract": {
+    "name": "ChitBook",
+    "address": "0xdaf21c1619cd8361907eacad00e2415ac5aea033",
+    "explorer": "https://explorer.testnet.arc.io/address/0xdaf21c1619cd8361907eacad00e2415ac5aea033"
+  },
+  "receipts": [
+    {
+      "id": "1",
+      "txHash": "0x62f75ad4f84b1bb20145e523faff025b0c0e5c6ac553b2990684781245abe6f1",
+      "block": "68947742",
+      "payer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "payee": "0xc38bc47F8dE8A361ce9cCB07fED90A7Df9C34BfE",
+      "amountUsdc": "0.500000",
+      "claimHash": "0x18a0d721fdb9e20ad566d09f6bc09fbe134ccb7933e308df6d6d1fad148f3c8f",
+      "memo": "api calls batch 417"
+    }
+  ],
+  "api": {
+    "receipt": "https://chit-sigma-khaki.vercel.app/api/receipt/1",
+    "receiptCount": "https://chit-sigma-khaki.vercel.app/api/receipt-count"
+  }
+}

@@ -8,7 +8,7 @@ export const RECEIPT_ISSUED_EVENT = parseAbiItem(
 // ("requested range too large"), so tx-hash enrichment walks backwards in
 // bounded windows and stops as soon as every wanted receipt is resolved.
 const WINDOW = 9000n;
-const MAX_WINDOWS = 24;
+const MAX_WINDOWS = 32;
 
 export async function findTxHashes(
   client: PublicClient,

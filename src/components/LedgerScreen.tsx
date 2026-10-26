@@ -74,9 +74,6 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
         claimHash: `0x${string}`; memo: string; timestamp: bigint;
       }>;
 
-      // tx-hash enrichment: backwards chunked log scan (RPC caps log ranges)
-      const txById = await findTxHashes(client, CHITBOOK_ADDRESS, ids);
-
       const parsed: LedgerEntry[] = raws.map((r, idx) => ({
         id: ids[idx],
         payer: r.payer,
@@ -85,10 +82,24 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
         claimHash: r.claimHash,
         memo: r.memo,
         timestamp: r.timestamp,
-        txHash: txById.get(ids[idx].toString()),
       }));
+      // rows render immediately; tx links attach when the log scan resolves
       setEntries(parsed);
       setLastFetched(Date.now());
+
+      // tx-hash enrichment: backwards chunked log scan (RPC caps log ranges)
+      void findTxHashes(client, CHITBOOK_ADDRESS, ids)
+        .then((txById) => {
+          setEntries((prev) =>
+            prev.map((e) => {
+              const tx = txById.get(e.id.toString());
+              return tx ? { ...e, txHash: tx } : e;
+            })
+          );
+        })
+        .catch(() => {
+          // enrichment is optional — rows render without tx links
+        });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load ledger.");
     } finally {

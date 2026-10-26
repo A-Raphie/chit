@@ -82,10 +82,14 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
           functionName: "getReceipt",
           args: [id],
         });
-        const txHash = (await findTxHashes(client, CHITBOOK_ADDRESS, [id])).get(
-          id.toString()
-        );
-        setFound({ receipt: raw, txHash });
+        setFound({ receipt: raw });
+        // tx link attaches when the log scan resolves (aged receipts scan deep)
+        void findTxHashes(client, CHITBOOK_ADDRESS, [id])
+          .then((m) => {
+            const txHash = m.get(id.toString());
+            if (txHash) setFound((prev) => (prev ? { ...prev, txHash } : prev));
+          })
+          .catch(() => {});
         return;
       }
 
@@ -124,10 +128,13 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
             functionName: "getReceipt",
             args: [match.receiptId],
           });
-          const txHash = (await findTxHashes(client, CHITBOOK_ADDRESS, [match.receiptId])).get(
-            match.receiptId.toString()
-          );
-          setFound({ receipt: raw, txHash });
+          setFound({ receipt: raw });
+          void findTxHashes(client, CHITBOOK_ADDRESS, [match.receiptId])
+            .then((m) => {
+              const txHash = m.get(match.receiptId.toString());
+              if (txHash) setFound((prev) => (prev ? { ...prev, txHash } : prev));
+            })
+            .catch(() => {});
           return;
         }
 
