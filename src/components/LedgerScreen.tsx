@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePublicClient } from "wagmi";
-import { parseAbiItem, type Address } from "viem";
+import type { Address } from "viem";
 import { Amount, usdcDecimalsFor } from "@/onchain-money";
 import { CHITBOOK_ADDRESS, CHITBOOK_ABI, type ChitReceipt } from "@/lib/chitbook";
+import { findTxHashes } from "@/lib/txscan";
 import { buildTxExplorerUrl } from "@/onchain-facts";
 import { ExternalLink, RefreshCw } from "lucide-react";
 
@@ -73,25 +74,8 @@ export default function LedgerScreen({ onSelectReceipt }: Props) {
         claimHash: `0x${string}`; memo: string; timestamp: bigint;
       }>;
 
-      // tx-hash enrichment: full-range event scan (contract is young)
-      const txById = new Map<string, `0x${string}`>();
-      try {
-        const logs = await client.getLogs({
-          address: CHITBOOK_ADDRESS,
-          event: parseAbiItem(
-            "event ReceiptIssued(uint256 indexed id, address indexed payer, address indexed payee, uint256 amount, bytes32 claimHash, string memo)"
-          ),
-          fromBlock: 0n,
-          toBlock: "latest",
-        });
-        for (const log of logs) {
-          if (log.args.id !== undefined && log.transactionHash) {
-            txById.set(log.args.id.toString(), log.transactionHash);
-          }
-        }
-      } catch {
-        // enrichment is optional — rows render without tx links
-      }
+      // tx-hash enrichment: backwards chunked log scan (RPC caps log ranges)
+      const txById = await findTxHashes(client, CHITBOOK_ADDRESS, ids);
 
       const parsed: LedgerEntry[] = raws.map((r, idx) => ({
         id: ids[idx],

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePublicClient } from "wagmi";
 import { keccak256, toBytes } from "viem";
 import { CHITBOOK_ADDRESS, CHITBOOK_ABI, type ChitReceipt } from "@/lib/chitbook";
+import { findTxHashes } from "@/lib/txscan";
 import { buildTxExplorerUrl } from "@/onchain-facts";
 import { Search, CheckCircle } from "lucide-react";
 
@@ -81,7 +82,10 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
           functionName: "getReceipt",
           args: [id],
         });
-        setFound({ receipt: raw });
+        const txHash = (await findTxHashes(client, CHITBOOK_ADDRESS, [id])).get(
+          id.toString()
+        );
+        setFound({ receipt: raw, txHash });
         return;
       }
 
@@ -120,7 +124,10 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
             functionName: "getReceipt",
             args: [match.receiptId],
           });
-          setFound({ receipt: raw });
+          const txHash = (await findTxHashes(client, CHITBOOK_ADDRESS, [match.receiptId])).get(
+            match.receiptId.toString()
+          );
+          setFound({ receipt: raw, txHash });
           return;
         }
 
@@ -192,14 +199,14 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
                 value={input}
                 onChange={(e) => { setInput(e.target.value); setError(null); setFound(null); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { void handleVerify(); } }}
-                placeholder={placeholder}
+                placeholder="Chit # · claim ref · 0x hash · 0x tx"
                 disabled={loading}
-                className="flex-1 font-mono text-sm bg-[#f5f0e8] border border-[#2a1f0e]/15 rounded-lg px-3 py-2.5 text-[#2a1f0e] placeholder:text-[#2a1f0e]/20 focus:outline-none focus:ring-2 focus:ring-[#a07830]/40 disabled:opacity-50"
+                className="flex-1 font-mono text-sm bg-[#f5f0e8] border-2 border-[#2a1f0e]/25 rounded-md px-3 py-2.5 text-[#2a1f0e] placeholder:text-[#2a1f0e]/30 focus:outline-none focus:border-[#a07830] focus:ring-2 focus:ring-[#a07830]/30 disabled:opacity-50"
               />
               <button
                 onClick={() => { void handleVerify(); }}
                 disabled={loading || !input.trim() || !CHITBOOK_ADDRESS}
-                className="bg-[#2a1f0e] text-[#f5f0e8] px-4 py-2.5 rounded-lg font-mono text-sm hover:bg-[#2a1f0e]/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="bg-[#f5b83d] text-[#2a1f0e] border-2 border-[#2a1f0e] px-4 py-2.5 rounded-md font-mono text-sm font-bold uppercase tracking-wider shadow-[2px_2px_0_#2a1f0e] hover:-translate-y-px hover:shadow-[3px_3px_0_#2a1f0e] active:translate-y-0 active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
               >
                 {loading ? (
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -216,7 +223,7 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
               {["Chit #", "Claim ref text", "0x claimHash", "0x txHash"].map((hint) => (
                 <span
                   key={hint}
-                  className="text-[9px] font-mono uppercase tracking-wider bg-[#2a1f0e]/5 text-[#2a1f0e]/40 px-2 py-0.5 rounded"
+                  className="text-[9px] font-mono uppercase tracking-wider bg-[#2a1f0e]/8 text-[#2a1f0e]/60 border border-[#2a1f0e]/20 px-2 py-0.5 rounded-sm"
                 >
                   {hint}
                 </span>
@@ -253,12 +260,12 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
                   rel="noopener noreferrer"
                   className="text-xs font-mono text-emerald-600 hover:text-emerald-700 underline break-all block"
                 >
-                  {found.txHash}
+                  tx {found.txHash.slice(0, 10)}…{found.txHash.slice(-8)} ↗
                 </a>
               )}
               <button
                 onClick={handleOpen}
-                className="w-full bg-[#2a1f0e] text-[#f5f0e8] py-2 rounded-lg font-mono text-xs uppercase tracking-wider hover:bg-[#2a1f0e]/80 transition-colors"
+                className="w-full bg-[#2a1f0e] text-[#f5f0e8] border-2 border-[#2a1f0e] py-2 rounded-md font-mono text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0_#a07830] hover:-translate-y-px hover:shadow-[3px_3px_0_#a07830] active:translate-y-0 active:shadow-none transition-all"
               >
                 Open Full Receipt
               </button>
@@ -268,8 +275,8 @@ export default function VerifyScreen({ onSelectReceipt }: Props) {
       </div>
 
       {/* Hint */}
-      <div className="bg-[#2a1f0e]/4 rounded-xl p-4 space-y-2 font-mono text-[10px] text-[#2a1f0e]/40">
-        <p className="uppercase tracking-wider text-[9px] text-[#2a1f0e]/25">How it works</p>
+      <div className="bg-[#f5f0e8] border-2 border-[#2a1f0e]/25 rounded-lg p-4 space-y-2 font-mono text-[10px] text-[#2a1f0e]/60">
+        <p className="uppercase tracking-wider text-[9px] text-[#2a1f0e]/55">How it works</p>
         <p>Enter a chit number, the original claim reference text, its keccak256 hash, or a transaction hash. All routes resolve to the same onchain record.</p>
       </div>
     </div>

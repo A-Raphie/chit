@@ -32,6 +32,16 @@ function formatTs(ts: bigint) {
 export default function ReceiptView({ receipt, txHash, claimRef, onBack }: Props) {
   const [copied, setCopied] = useState(false);
 
+  function copyText(text: string) {
+    return navigator.clipboard.writeText(text).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      },
+      () => {}
+    );
+  }
+
   const explorerUrl = txHash
     ? buildTxExplorerUrl(CHAIN_ID, txHash)
     : undefined;
@@ -76,13 +86,24 @@ export default function ReceiptView({ receipt, txHash, claimRef, onBack }: Props
       )}
 
       {/* The voucher slip */}
-      <div className="bg-white border border-[#2a1f0e]/10 rounded-xl shadow-md overflow-hidden font-mono">
+      <div className="bg-[#fffaf0] border-2 border-[#2a1f0e] rounded-lg shadow-[5px_5px_0_#2a1f0e] overflow-hidden font-mono">
+        {/* perforated tear edge */}
+        <div
+          aria-hidden
+          className="h-3 bg-[#f5f0e8]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 7px 8px, #f5f0e8 5px, transparent 5px), radial-gradient(circle at 7px 8px, #2a1f0e 5px, transparent 5px)",
+            backgroundSize: "14px 16px",
+            backgroundPosition: "0 0, 0 1px",
+          }}
+        />
         {/* Header stripe */}
         <div className="bg-[#2a1f0e] px-6 py-4 text-center">
-          <p className="text-[#f5f0e8]/50 text-[10px] uppercase tracking-[0.2em]">
+          <p className="text-[#f5f0e8]/70 text-[10px] uppercase tracking-[0.2em]">
             Arc Testnet · ChitBook
           </p>
-          <p className="text-[#f5f0e8] text-4xl font-bold tabular-nums mt-1 tracking-tight">
+          <p className="text-[#f5b83d] text-4xl font-bold tabular-nums mt-1 tracking-tight">
             #{receipt.id.toString()}
           </p>
           <p className="text-[#a07830] text-xs mt-1 tracking-[0.1em] uppercase">
@@ -93,14 +114,14 @@ export default function ReceiptView({ receipt, txHash, claimRef, onBack }: Props
         {/* Body */}
         <div className="px-6 py-5 space-y-4 text-[#2a1f0e]">
           {/* Amount — big display */}
-          <div className="text-center py-3 border-y-2 border-dashed border-[#2a1f0e]/10">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[#2a1f0e]/40 mb-1">
+          <div className="text-center py-3 border-y-2 border-dashed border-[#2a1f0e]/25">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[#2a1f0e]/55 mb-1">
               Amount Settled
             </p>
             <p className="text-4xl font-bold tabular-nums tracking-tight text-[#2a1f0e]">
               {amountFormatted}
             </p>
-            <p className="text-xs text-[#a07830] mt-0.5 tracking-[0.1em] uppercase">USDC</p>
+            <p className="text-xs text-[#7a5a20] mt-0.5 tracking-[0.3em] uppercase">USDC settled</p>
           </div>
 
           {/* Fields */}
@@ -110,32 +131,37 @@ export default function ReceiptView({ receipt, txHash, claimRef, onBack }: Props
           <div className="border-t border-dashed border-[#2a1f0e]/10 pt-4 space-y-3">
             {claimRef && (
               <div>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/40 mb-0.5">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/55 mb-0.5">
                   Claim Reference
                 </p>
                 <p className="text-sm text-[#2a1f0e] break-all">{claimRef}</p>
               </div>
             )}
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/40 mb-0.5">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/55 mb-0.5">
                 Claim Hash (keccak256)
               </p>
-              <p className="text-[11px] text-[#2a1f0e]/60 break-all leading-relaxed">
+              <button
+                onClick={() => void copyText(receipt.claimHash)}
+                title="Copy claim hash"
+                className="text-[11px] text-[#2a1f0e]/70 hover:text-[#a07830] transition-colors break-all leading-relaxed text-left group"
+              >
                 {receipt.claimHash}
-              </p>
+                <Copy size={10} className="inline ml-1 opacity-0 group-hover:opacity-60 align-middle" />
+              </button>
             </div>
 
             {receipt.memo && (
               <div>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/40 mb-0.5">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/55 mb-0.5">
                   Memo
                 </p>
-                <p className="text-sm text-[#2a1f0e]/80 italic">&ldquo;{receipt.memo}&rdquo;</p>
+                <p className="text-sm text-[#2a1f0e] italic">&ldquo;{receipt.memo}&rdquo;</p>
               </div>
             )}
 
             <div>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/40 mb-0.5">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/55 mb-0.5">
                 Timestamp
               </p>
               <p className="text-sm">{formatTs(receipt.timestamp)}</p>
@@ -150,25 +176,30 @@ export default function ReceiptView({ receipt, txHash, claimRef, onBack }: Props
                   <div className="w-full border-t-2 border-dashed border-[#2a1f0e]/10" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white px-3 text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/30">
+                  <span className="bg-[#fffaf0] px-3 text-[10px] uppercase tracking-[0.2em] text-[#2a1f0e]/50 border border-[#2a1f0e]/20 rounded-sm">
                     Transaction
                   </span>
                 </div>
               </div>
 
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/40 mb-1">
+              <div className="pt-1">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[#2a1f0e]/55 mb-1">
                   Tx Hash
                 </p>
-                <p className="text-[11px] text-[#2a1f0e]/60 break-all leading-relaxed">
+                <button
+                  onClick={() => txHash && void copyText(txHash)}
+                  title="Copy tx hash"
+                  className="text-[11px] text-[#2a1f0e]/70 hover:text-[#a07830] transition-colors break-all leading-relaxed text-left group"
+                >
                   {txHash}
-                </p>
+                  <Copy size={10} className="inline ml-1 opacity-0 group-hover:opacity-60 align-middle" />
+                </button>
                 {explorerUrl && (
                   <a
                     href={explorerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1.5 inline-flex items-center gap-1 text-xs text-[#a07830] hover:text-[#a07830]/70 transition-colors"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#7a5a20] border-2 border-[#2a1f0e] bg-[#f5f0e8] px-3 py-1.5 rounded-md shadow-[2px_2px_0_#2a1f0e] hover:-translate-y-px hover:shadow-[3px_3px_0_#2a1f0e] active:translate-y-0 active:shadow-none transition-all font-mono uppercase tracking-wider"
                   >
                     View on Explorer <ExternalLink size={11} />
                   </a>
@@ -179,10 +210,15 @@ export default function ReceiptView({ receipt, txHash, claimRef, onBack }: Props
         </div>
 
         {/* Footer */}
-        <div className="bg-[#f5f0e8] px-6 py-3 border-t border-[#2a1f0e]/10 flex items-center justify-between">
-          <p className="text-[9px] uppercase tracking-[0.18em] text-[#2a1f0e]/30">
-            Issued via ChitBook · Arc Testnet
-          </p>
+        <div className="bg-[#f5f0e8] px-6 py-3 border-t-2 border-[#2a1f0e]/20 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="inline-block w-6 h-6 rounded-full border-2 border-[#a07830] flex items-center justify-center shrink-0">
+              <span className="block w-2.5 h-2.5 rounded-full bg-[#f5b83d]" />
+            </span>
+            <p className="text-[9px] uppercase tracking-[0.18em] text-[#2a1f0e]/50">
+              Issued via ChitBook · Arc
+            </p>
+          </div>
           <button
             onClick={copyJson}
             className="flex items-center gap-1.5 text-xs text-[#2a1f0e]/50 hover:text-[#2a1f0e] transition-colors"
@@ -191,13 +227,27 @@ export default function ReceiptView({ receipt, txHash, claimRef, onBack }: Props
             {copied ? "Copied!" : "Copy as JSON"}
           </button>
         </div>
+
+        {/* Perforated bottom edge — tear here */}
+        <div
+          aria-hidden
+          className="h-3 bg-[#f5f0e8]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 7px 8px, #f5f0e8 5px, transparent 5px), radial-gradient(circle at 7px 8px, #2a1f0e 5px, transparent 5px)",
+            backgroundSize: "14px 16px",
+            backgroundPosition: "0 0, 0 1px",
+          }}
+        />
       </div>
 
       {/* API curl hint */}
-      <div className="bg-[#2a1f0e]/4 rounded-xl p-4 text-[10px] font-mono text-[#2a1f0e]/50 space-y-1">
-        <p className="text-[#2a1f0e]/30 uppercase tracking-wider text-[9px] mb-2">Agent verification endpoint</p>
-        <p className="break-all">curl /api/receipt/{receipt.id.toString()}</p>
-        <p className="text-[#2a1f0e]/30 italic">Returns receipt JSON for programmatic settlement verification.</p>
+      <div className="bg-[#f5f0e8] border-2 border-[#2a1f0e]/25 rounded-lg p-4 text-[10px] font-mono space-y-1">
+        <p className="text-[#2a1f0e]/55 uppercase tracking-[0.2em] text-[9px] mb-2">Agent verification endpoint</p>
+        <p className="break-all text-[#2a1f0e]">
+          <span className="text-[#a07830]">$</span> curl https://chit-sigma-khaki.vercel.app/api/receipt/{receipt.id.toString()}
+        </p>
+        <p className="text-[#2a1f0e]/45 italic">Returns receipt JSON for programmatic settlement verification — no key, no login.</p>
       </div>
     </div>
   );
